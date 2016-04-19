@@ -1,17 +1,19 @@
 #!/bin/bash
 
+#Be sure to modify path to your specific environment
+
 #Make new VM Directory
 echo Creating New Directory
-ssh $1 mkdir /vmfs/volumes/IRA/$3
+ssh $1 mkdir /vmfs/volumes/data-path/$3
 
 #Bring over source parameters list
 echo Sourcing parameters to clone
-ssh $1 cat /vmfs/volumes/IRA/$2/$2.vmx > /tmp/vm_spec
+ssh $1 cat /vmfs/volumes/data-path/$2/$2.vmx > /tmp/vm_spec
 
 #Extract relevant info for clone VM
 echo Generating new config file
 cat /tmp/vm_spec | sed "s/$2/$3/g" > /tmp/$3.vmx
-scp /tmp/$3.vmx $1:/vmfs/volumes/IRA/$3/
+scp /tmp/$3.vmx $1:/vmfs/volumes/data-path/$3/
 
 #Generate Drive List
 echo Aquiring drive list
@@ -22,7 +24,7 @@ echo Cloning disks
 for d in ${drives[@]}
 do
 	nd=$(echo $d | sed "s/$2/$3/g")	
-	ssh $1 vmkfstools -i /vmfs/volumes/IRA/$2/$d /vmfs/volumes/IRA/$3/$nd
+	ssh $1 vmkfstools -i /vmfs/volumes/data-path/$2/$d /vmfs/volumes/data-path/$3/$nd
 done
 
 #Add to VM Registry
