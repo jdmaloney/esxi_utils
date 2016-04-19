@@ -29,7 +29,7 @@ done
 
 #Add to VM Registry
 echo Adding VM to registry
-ssh $1 vim-cmd solo/registervm /vmfs/volumes/IRA/$3/$3.vmx
+ssh $1 vim-cmd solo/registervm /vmfs/volumes/data-path/$3/$3.vmx
 
 #Cleanup
 rm -rf /tmp/vm_spec
