@@ -1,0 +1,34 @@
+#!/bin/bash
+
+#Make new VM Directory
+echo Creating New Directory
+ssh $1 mkdir /vmfs/volumes/IRA/$3
+
+#Bring over source parameters list
+echo Sourcing parameters to clone
+ssh $1 cat /vmfs/volumes/IRA/$2/$2.vmx > /tmp/vm_spec
+
+#Extract relevant info for clone VM
+echo Generating new config file
+cat /tmp/vm_spec | sed "s/$2/$3/g" > /tmp/$3.vmx
+scp /tmp/$3.vmx $1:/vmfs/volumes/IRA/$3/
+
+#Generate Drive List
+echo Aquiring drive list
+drives=($(cat /tmp/vm_spec | grep scsi | grep fileName | awk '{print $3}' | sed 's/"//g'))
+
+#Clone disks
+echo Cloning disks
+for d in ${drives[@]}
+do
+	nd=$(echo $d | sed "s/$2/$3/g")	
+	ssh $1 vmkfstools -i /vmfs/volumes/IRA/$2/$d /vmfs/volumes/IRA/$3/$nd
+done
+
+#Add to VM Registry
+echo Adding VM to registry
+ssh $1 vim-cmd solo/registervm /vmfs/volumes/IRA/$3/$3.vmx
+
+#Cleanup
+rm -rf /tmp/vm_spec
+rm -rf /tmp/$3.vmx
