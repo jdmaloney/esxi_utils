@@ -1,36 +1,58 @@
 #!/bin/bash
 
+#Error Checking
+if [ -z $1 ] || [ -z $2 ] || [ -z $3 ];
+then
+	echo "Please supply all proper command line arguments"
+	echo "./Clone_VM source_host source_vm dest_vm dest_host(optional)"
+	echo "If no dest_host is supplied, program defaults to replicating on same host"
+else
+
 #Be sure to modify path to your specific environment
 
 #Make new VM Directory
 echo Creating New Directory
-ssh $1 mkdir /vmfs/volumes/data-path/$3
+if [ -z $4 ];
+then
+	ssh $1 mkdir /vmfs/volumes/Your-path/$3
+else
+	ssh $4 mkdir /vmfs/volumes/Your-path/$3
+fi
 
 #Bring over source parameters list
 echo Sourcing parameters to clone
-ssh $1 cat /vmfs/volumes/data-path/$2/$2.vmx > /tmp/vm_spec
+ssh $1 cat /vmfs/volumes/Your-path/$2/$2.vmx > /tmp/vm_spec
 
 #Extract relevant info for clone VM
 echo Generating new config file
 cat /tmp/vm_spec | sed "s/$2/$3/g" > /tmp/$3.vmx
-scp /tmp/$3.vmx $1:/vmfs/volumes/data-path/$3/
-
+if [ -z $4 ];
+then
+	scp /tmp/$3.vmx $1:/vmfs/volumes/Your-path/$3/
+else
+	scp /tmp/$3.vmx $4:/vmfs/volumes/Your-path/$3/
+fi
 #Generate Drive List
 echo Aquiring drive list
 drives=($(cat /tmp/vm_spec | grep scsi | grep fileName | awk '{print $3}' | sed 's/"//g'))
 
 #Clone disks
-echo Cloning disks
-for d in ${drives[@]}
-do
-	nd=$(echo $d | sed "s/$2/$3/g")	
-	ssh $1 vmkfstools -i /vmfs/volumes/data-path/$2/$d /vmfs/volumes/data-path/$3/$nd
-done
-
+	echo Cloning disks
+	for d in ${drives[@]}
+	do
+		nd=$(echo $d | sed "s/$2/$3/g")	
+		ssh $1 vmkfstools -i /vmfs/volumes/Your-path/$2/$d /vmfs/volumes/IRA/$3/$nd
+	done
 #Add to VM Registry
 echo Adding VM to registry
-ssh $1 vim-cmd solo/registervm /vmfs/volumes/data-path/$3/$3.vmx
-
+if [ -z $4 ];
+then
+	ssh $1 vim-cmd solo/registervm /vmfs/volumes/Your-path/$3/$3.vmx
+else
+	ssh $4 vim-cmd solo/registervm /vmfs/volumes/Your-path/$3/$3.vmx
+fi
 #Cleanup
 rm -rf /tmp/vm_spec
 rm -rf /tmp/$3.vmx
+
+fi
